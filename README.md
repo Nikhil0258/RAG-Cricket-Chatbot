@@ -66,32 +66,29 @@ Final Answer with Explicit Scope Disclosure
 
 ## 📂 Project Structure
 
+```text
 RAG-Cricket-Chatbot/
+├── Code/                               # Application Source Code
+│   ├── app.py                          # Streamlit UI & Entry Point
+│   ├── final_design.py                 # Core Orchestrator (Intent Routing & Flow)
+│   ├── stats_tool.py                   # Stats Engine (JSON Aggregation & Metrics)
+│   ├── rag_chain.py                    # LangChain & LLM Prompt Logic
+│   ├── retriever.py                    # FAISS Retrieval Logic
+│   ├── vector_db.py                    # FAISS Index Management
+│   ├── embeddings_creation.py          # Embedding Generation Pipeline
+│   ├── data_ingestion_pipeline_script.py # Raw-to-Structured Data Ingestion
+│   └── test_suite.py                   # Automated Testing Framework
 │
-├── Code/ # Application source code
-│ ├── app.py # Streamlit UI entry point
-│ ├── final_design.py # Main chatbot orchestration (routing + flow)
-│ ├── stats_tool.py # Deterministic statistics engine (JSON-based)
-│ ├── rag_chain.py # RAG + LLM chains
-│ ├── retriever.py # FAISS retrieval logic
-│ ├── vector_db.py # FAISS index creation and management
-│ ├── embeddings_creation.py # Embedding generation pipeline
-│ ├── data_ingestion_pipeline_script.py # Raw-to-structured data ingestion
-│ └── test_suite.py # Comprehensive automated test suite
+├── Dataset/                            # Cleaned CSV Data (2020–2024)
+├── final_json_scorecards/              # Structured JSON Data for Stats Engine
+├── final_match_summaries/              # Textual Summaries for RAG Indexing
+├── Professional version Documents/     # Architecture & Design Documentation
 │
-├── Dataset/ # Cleaned CSV datasets (2020–2024)
-│
-├── final_json_scorecards/ # Final structured JSON scorecards
-│
-├── final_match_summaries/ # Match summaries used for RAG
-│
-├── Professional version Documents/ # Architecture, design, and requirement docs
-│
-├── requirements.txt # Python dependencies
-├── faiss_metadata.pkl # FAISS metadata for retrieval
-├── .gitignore # Ignored files and folders
-└── README.md # Project documentation
-
+├── requirements.txt                    # Python Dependencies
+├── faiss_metadata.pkl                  # Serialized FAISS Metadata
+├── .gitignore                          # Git Ignore Rules
+└── README.md                           # Project Documentation
+```
 
 ## 🧪 Testing Strategy
 
