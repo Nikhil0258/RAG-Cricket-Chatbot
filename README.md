@@ -125,7 +125,7 @@ What was Rahane’s performance with match context?
 
 Ambiguous (Clarification Triggered)
 How many runs did Pant score?
-
+```
 🖥️ Running the App Locally
 1️⃣ Clone Repository
 bash
