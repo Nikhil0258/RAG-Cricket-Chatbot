@@ -126,78 +126,92 @@ What was Rahane’s performance with match context?
 Ambiguous (Clarification Triggered)
 How many runs did Pant score?
 ```
-🖥️ Running the App Locally
-1️⃣ Clone Repository
-bash
-Copy code
-git clone https://github.com/Nikhil0258/RAG-Cricket-Chatbot.git
-cd RAG-Cricket-Chatbot
-2️⃣ Create Virtual Environment
-bash
-Copy code
-python -m venv venv
-venv\Scripts\activate   # Windows
-3️⃣ Install Dependencies
-bash
-Copy code
-pip install -r requirements.txt
-4️⃣ Set Environment Variable
-Create a .env file:
+## 🖥️ Running the App Locally
 
-env
-Copy code
-OPENAI_API_KEY=your_api_key_here
-5️⃣ Run Streamlit App
-bash
-Copy code
-streamlit run Code/app.py
-☁️ Deployment (Streamlit Cloud)
-Push code to GitHub (✅ already done)
+Follow these steps to run the Cricket RAG Chatbot on your local machine.
 
-Go to https://share.streamlit.io
+### 1️⃣ Clone the Repository
+- git clone https://github.com/Nikhil0258/RAG-Cricket-Chatbot.git
+- cd RAG-Cricket-Chatbot
+### 2️⃣ Create and Activate Virtual Environment
+- python -m venv venv
+- venv\Scripts\activate    # Windows
+- source venv/bin/activate  # macOS / Linux
+### 3️⃣ Install Dependencies
+- pip install -r requirements.txt
+### 4️⃣ Set Environment Variables
+- Create a `.env` file at the project root:
+    - OPENAI_API_KEY=your_api_key_here
+### 5️⃣ Run the Streamlit App
+ - streamlit run Code/app.py
 
-Select repository: RAG-Cricket-Chatbot
+## ☁️ Deployment (Streamlit Cloud)
 
-Set main file path:
+The application is deployed using **Streamlit Cloud**
 
-bash
-Copy code
-Code/app.py
-Add secret:
+### Deployment Steps
+- Go to 👉 https://share.streamlit.io
+- Select repository: RAG-Cricket-Chatbot
+- Select branch: main
+- Set main file path:
+`Code/app.py`
+- Add secret in **Advanced Settings → Secrets**:
+    -  `OPENAI_API_KEY = "your_api_key"`
+- Click Deploy 🚀
 
-toml
-Copy code
-OPENAI_API_KEY = "your_api_key"
-Deploy 🚀
 
-🔒 Design Principles
-❌ No LLM-based calculations
+## 🌐 Live Demo
 
-✅ Stats always computed from structured data
+🔗 https://rag-cricket-chatbot.streamlit.app
 
-✅ Narratives generated only from retrieved context
 
-✅ Explicit scope & data provenance
+## 🔒 Design Principles
 
-✅ Production-ready architecture
+❌ No LLM-based numerical calculations<br>
+✅ All statistics computed from structured JSON scorecards<br>
+✅ Narratives generated only from retrieved match context<br>
+✅ Explicit scope disclosure and data provenance<br>
+✅ Deterministic + RAG hybrid architecture<br>
+✅ Production-ready and cloud-safe design<br>
 
-📈 Future Enhancements
-Player comparison queries
 
-Multi-series aggregation
 
-Conversation memory
+## 🧪 Testing Strategy
 
-Advanced filtering (venue, opposition, innings)
+Comprehensive automated test suite using `test_suite.py`
 
-Caching optimization for large-scale deployment
+### Covers:
+1. Query normalization
+2. Ambiguity detection
+3. Intent classification
+4. Numerical queries
+5. criptive (RAG) queries
+6. Hybrid queries
+7. Error handling and edge cases
+8. Performance checks
 
-👤 Author
-Nikhil Sai
-Data Engineer | Python | GenAI | RAG Systems
+## Run tests locally:
+`python Code/test_suite.py`
+
+## 🚧 Future Enhancements
+- Player comparison queries
+- Multi-series and cross-year aggregation
+- Conversation memory
+- Advanced filtering (venue, opposition, innings)
+- Retrieval and caching optimization for large-scale usage
+- Improved citation and match coverage validation
+
+
+
+## 👤 Author
+**Nikhil Sai**
+
+Data Engineer | Python | GenAI | RAG Systems <BR>
 
 GitHub: https://github.com/Nikhil0258
 
-📜 License
-This project is for educational and portfolio purposes.
-Data sources are used for analysis and learning only.
+
+## 📜 License
+This project is for **educational and portfolio purposes only**.
+
+All datasets are used strictly for analysis and learning.
