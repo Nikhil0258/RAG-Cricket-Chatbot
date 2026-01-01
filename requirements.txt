@@ -1,24 +1,21 @@
 # Core
-python-dotenv
+python-dotenv>=1.0.0
 
 # Data
-numpy
-pandas
+numpy>=1.24.0
+pandas>=2.0.0
 
 # Embeddings & Vector DB
-sentence-transformers
-faiss-cpu
+sentence-transformers>=2.2.2
+faiss-cpu>=1.7.4
 
 # LLM & LangChain
-langchain
-langchain-openai
-openai
+langchain>=0.1.0
+langchain-openai>=0.0.5
+openai>=1.0.0
 
 # UI
-streamlit
-
-# Testing
-pytest
+streamlit>=1.28.0
 
 # Utils
-tqdm
+tqdm>=4.66.0
