@@ -1,0 +1,40 @@
+# ===============================
+# Environment & Secrets
+# ===============================
+.env
+venv/
+
+# ===============================
+# Python Cache
+# ===============================
+__pycache__/
+*.pyc
+*.pyo
+
+# ===============================
+# Files to Exclude Explicitly
+# ===============================
+final.py
+
+# ===============================
+# Large / Generated Data
+# ===============================
+match_summaries/
+scorecards_json/
+Raw versions/
+
+# ===============================
+# Jupyter / Experimental Files
+# ===============================
+*.ipynb
+.ipynb_checkpoints/
+
+# ===============================
+# OS / Editor Noise
+# ===============================
+.DS_Store
+.vscode/
+.idea/
+
+*.zip
+*.png

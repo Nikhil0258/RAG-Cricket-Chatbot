@@ -1,0 +1,24 @@
+# Core
+python-dotenv
+
+# Data
+numpy
+pandas
+
+# Embeddings & Vector DB
+sentence-transformers
+faiss-cpu
+
+# LLM & LangChain
+langchain
+langchain-openai
+openai
+
+# UI
+streamlit
+
+# Testing
+pytest
+
+# Utils
+tqdm
