@@ -38,24 +38,39 @@ This project is designed to be **accurate, explainable, and scalable**, avoiding
 
 User Query  
 ↓  
-Query Normalization (Entities: Player, Year, Series, Match)  
+Query Normalization  
+*(Entities: Player, Year, Series, Match)*  
 ↓  
 Ambiguity Check  
 ↓  
 Intent Classification  
 ↓  
 
-┌──────────────────┬────────────────────┬──────────────────────┐  
-│ **Numerical**    │ **Descriptive**    │ **Hybrid**           │  
-│                  │                    │                      │  
-│ Stats Tool       │ FAISS Retriever    │  Stats + FAISS       │  
-│ (JSON Data)      │ + LLM              │  + LLM Synthesis     │  
-└──────────────────┴────────────────────┴──────────────────────┘  
+### Intent-Based Routing
+
+- **Numerical Queries**
+  - Stats Tool  
+  - Source: Structured JSON Scorecards
+
+- **Descriptive Queries**
+  - FAISS Retriever  
+  - LLM-based Narrative Generation
+
+- **Hybrid Queries**
+  - Stats Tool + FAISS Retriever  
+  - LLM Synthesis with Scope Alignment
 
 ↓  
-Final Answer with Scope Disclosure
 
+Final Answer with Explicit Scope Disclosure
+✅ Same structure
+✅ Much cleaner rendering
+✅ No broken ASCII boxes
+✅ Recruiter-friendly
 
+📂 Project Structure (Clean Markdown Version)
+md
+Copy code
 ## 📂 Project Structure
 
 RAG-Cricket-Chatbot/
@@ -63,7 +78,7 @@ RAG-Cricket-Chatbot/
 ├── Code/ # Application source code
 │ ├── app.py # Streamlit UI entry point
 │ ├── final_design.py # Main chatbot orchestration
-│ ├── stats_tool.py # Deterministic stats engine
+│ ├── stats_tool.py # Deterministic statistics engine
 │ ├── rag_chain.py # RAG + LLM chains
 │ ├── retriever.py # FAISS retrieval logic
 │ ├── vector_db.py # FAISS index creation
@@ -74,12 +89,13 @@ RAG-Cricket-Chatbot/
 ├── Dataset/ # Cleaned CSV datasets
 ├── final_json_scorecards/ # Final structured scorecards
 ├── final_match_summaries/ # Match summaries for RAG
-├── Professional version Documents/# Architecture & design docs
+├── Professional version Documents/ # Architecture & design docs
 │
 ├── requirements.txt # Python dependencies
 ├── faiss_metadata.pkl # FAISS metadata
-├── .gitignore # Ignored files/folders
+├── .gitignore # Ignored files and folders
 └── README.md # Project documentation
+
 
 
 ## 🧪 Testing Strategy
