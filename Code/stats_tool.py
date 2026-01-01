@@ -4,10 +4,18 @@
 
 import json
 import os
+from pathlib import Path
 from typing import List, Dict, Optional, Any
 
-# UPDATED: Pointing to the directory containing multiple JSON files
-DEFAULT_PATH = "C:\\Users\\HI\\OneDrive\\Desktop\\RAG Cricket ChatBot Project\\scorecards_json"
+# Project root directory
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+# Directory containing JSON scorecards
+DEFAULT_PATH = PROJECT_ROOT / "final_json_scorecards"
+if not DEFAULT_PATH.exists():
+    raise FileNotFoundError(
+        f"Scorecards directory not found at {DEFAULT_PATH}"
+    )
 
 # ---------------------------------------------------------------------------
 # DATA LOADING

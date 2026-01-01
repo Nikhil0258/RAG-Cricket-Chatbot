@@ -38,6 +38,7 @@ import os
 import json
 import numpy as np
 from functools import lru_cache
+from pathlib import Path
 from typing import Dict, List, Optional, Any
 
 # Vector embeddings for semantic search
@@ -77,8 +78,11 @@ class ModelManager:
             temperature=0  # Deterministic outputs for consistency
         )
         
-        # File paths
-        self.files_dir = "C:\\Users\\HI\\OneDrive\\Desktop\\RAG Cricket ChatBot Project\\final_match_summaries"
+        # Project root (…/rag-cricket-chatbot)
+        project_root = Path(__file__).resolve().parents[1]
+
+        # Match summaries directory (relative, cloud-safe)
+        self.files_dir = project_root / "final_match_summaries"
         
         # FAISS index (populated during initialization)
         self.index = None
