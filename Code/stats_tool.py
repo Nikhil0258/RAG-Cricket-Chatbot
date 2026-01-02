@@ -1,307 +1,240 @@
 # ============================================================================
-# STATS TOOL - PRODUCTION SAFE VERSION
+# STATS TOOL - PRODUCTION SAFE (SCORECARD-BASED SCHEMA)
 # ============================================================================
 
 import json
 import os
 from pathlib import Path
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional
 
-# Project root directory
+def safe_int(value, default=0):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+def safe_float(value, default=0.0):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+# ---------------------------------------------------------------------------
+# PROJECT PATHS
+# ---------------------------------------------------------------------------
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SCORECARDS_DIR = PROJECT_ROOT / "final_json_scorecards"
 
-# Directory containing JSON scorecards
-DEFAULT_PATH = PROJECT_ROOT / "final_json_scorecards"
-if not DEFAULT_PATH.exists():
-    raise FileNotFoundError(
-        f"Scorecards directory not found at {DEFAULT_PATH}"
-    )
+if not SCORECARDS_DIR.exists():
+    raise FileNotFoundError(f"Scorecards directory not found at {SCORECARDS_DIR}")
 
 # ---------------------------------------------------------------------------
 # DATA LOADING
 # ---------------------------------------------------------------------------
 
-def load_scorecards(directory_path: str = DEFAULT_PATH) -> List[Dict]:
-    """
-    Load and aggregate all JSON scorecard files from a directory.
-    """
-    all_matches = []
+def load_scorecards(directory: Path) -> List[Dict]:
+    matches = []
+    files = [f for f in os.listdir(directory) if f.endswith(".json")]
 
-    # 1. Validation: Check if directory exists
-    if not os.path.exists(directory_path):
-        # Fallback: check if the folder is in the current working directory
-        local_path = os.path.join(os.getcwd(), "scorecards_json")
-        if os.path.exists(local_path):
-            directory_path = local_path
-        else:
-            print(f"⚠️ Warning: Scorecards directory not found at {directory_path}")
-            return []
+    print(f"📂 Loading scorecards from: {directory}")
 
-    print(f"📂 Loading scorecards from: {directory_path}...")
+    for file in files:
+        try:
+            with open(directory / file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                matches.append(data)
+        except Exception as e:
+            print(f"❌ Error loading {file}: {e}")
 
-    # 2. Iteration: Loop through all files in the folder
-    try:
-        files = [f for f in os.listdir(directory_path) if f.endswith('.json')]
-        
-        if not files:
-            print("⚠️ Warning: No .json files found in the directory.")
-            return []
+    print(f"✓ Loaded {len(matches)} matches")
+    return matches
 
-        for filename in files:
-            file_path = os.path.join(directory_path, filename)
-            
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    
-                    # Handle both single-match objects (Dict) and lists of matches (List)
-                    if isinstance(data, list):
-                        all_matches.extend(data)
-                    elif isinstance(data, dict):
-                        all_matches.append(data)
-                        
-            except json.JSONDecodeError:
-                print(f"❌ Error: {filename} is not valid JSON. Skipping.")
-            except Exception as e:
-                print(f"❌ Error loading {filename}: {e}")
 
-        print(f"✓ Stats Tool successfully loaded {len(all_matches)} matches from {len(files)} files.")
-        return all_matches
-
-    except Exception as e:
-        print(f"❌ Critical Error accessing directory: {e}")
-        return []
-
-# Initialize global data
-scorecards = load_scorecards()
+scorecards = load_scorecards(SCORECARDS_DIR)
 
 # ---------------------------------------------------------------------------
-# CORE FILTERS (PRIVATE)
+# CORE MATCH FILTER
 # ---------------------------------------------------------------------------
 
 def _filter_matches(
     player: str,
-    year: Optional[int],
-    opponent: Optional[str],
+    year: Optional[int] = None,
+    opponent: Optional[str] = None,
     match_ids: Optional[List[str]] = None
 ) -> List[Dict]:
-    """
-    Filter matches based on year, opponent, and explicit match IDs.
-    """
+
     results = []
-    
-    # Normalize inputs
-    target_player = player.strip().lower() if player else ""
-    target_opponent = opponent.strip().lower() if opponent else ""
+    target_player = player.lower().strip()
+    target_opponent = opponent.lower().strip() if opponent else ""
 
     for sc in scorecards:
-        # Safety check: Ensure sc is a dictionary and has match_info
-        if not isinstance(sc, dict) or "match_info" not in sc:
+        mi = sc.get("match_info", {})
+        match_id = str(mi.get("match_id", ""))
+
+        if match_ids and match_id not in map(str, match_ids):
             continue
 
-        # 1. ID Filter (for Hybrid RAG queries)
-        # Handle cases where match_id might be int or string
-        current_id = str(sc["match_info"].get("match_id", ""))
-        
-        if match_ids and current_id not in [str(m) for m in match_ids]:
+        start_date = mi.get("dates", {}).get("start")
+        if not start_date:
             continue
 
-        # 2. Year Filter
-        match_date = sc["match_info"]["dates"]["start"]
-        match_year = int(match_date.split("-")[0]) if match_date else 0
+        match_year = int(start_date.split("-")[0])
         if year and match_year != year:
             continue
 
-        # 3. Opponent Filter
-        teams = sc["match_info"]["teams"]
-        team_names = [teams["team1"]["name"].lower(), teams["team2"]["name"].lower()]
+        teams = mi.get("teams", {})
+        team_names = [
+            teams.get("team1", {}).get("name", "").lower(),
+            teams.get("team2", {}).get("name", "").lower()
+        ]
+
         if target_opponent and target_opponent not in team_names:
             continue
 
-        # 4. Player Presence Check (Optimization)
-        player_found = False
-        for innings in sc.get("innings", []):
-            for bat in innings.get("batting", []):
-                if target_player in bat["player_name"].lower():
-                    player_found = True
-                    break
-            if not player_found:
-                for bowl in innings.get("bowling", []):
-                    if target_player in bowl["player_name"].lower():
-                        player_found = True
-                        break
-            if player_found: 
+        # Player presence check (batting OR bowling)
+        found = False
+
+        for row in sc.get("batting_scorecard", []):
+            if target_player in row.get("batsman", "").lower():
+                found = True
                 break
-        
-        if player_found:
+
+        if not found:
+            for row in sc.get("bowling_scorecard", []):
+                if target_player in row.get("bowler", "").lower():
+                    found = True
+                    break
+
+        if found:
             results.append(sc)
 
     return results
 
+# ---------------------------------------------------------------------------
+# PLAYER EXTRACTION (SCORECARD BASED)
+# ---------------------------------------------------------------------------
 
-def _player_innings(sc: Dict, player: str) -> List[Dict]:
-    """Extract batting performance for a specific match."""
-    innings_data = []
-    target_player = player.lower().strip()
+def _player_batting(sc: Dict, player: str) -> List[Dict]:
+    p = player.lower().strip()
+    data = []
 
-    for innings in sc.get("innings", []):
-        for bat in innings.get("batting", []):
-            if target_player in bat["player_name"].lower():
-                innings_data.append({
-                    "match_id": sc["match_info"]["match_id"],
-                    "innings": innings.get("innings_number"),
-                    "runs": int(bat.get("runs", 0)),
-                    "balls": int(bat.get("balls", 0)),
-                    "fours": int(bat.get("fours", 0)),
-                    "sixes": int(bat.get("sixes", 0)),
-                    "dismissed": bat.get("dismissed", False)
-                })
-    return innings_data
+    for row in sc.get("batting_scorecard", []):
+        if p in row.get("batsman", "").lower():
+            data.append({
+                "match_id": sc["match_info"]["match_id"],
+                "runs": safe_int(row.get("runs")),
+                "balls": safe_int(row.get("balls")),
+                "fours": safe_int(row.get("fours")),
+                "sixes": safe_int(row.get("sixes")),
+                "dismissed": bool(row.get("isOut", False))
+            })
+
+    return data
 
 
 def _player_bowling(sc: Dict, player: str) -> List[Dict]:
-    """Extract bowling performance for a specific match."""
-    bowling_data = []
-    target_player = player.lower().strip()
+    p = player.lower().strip()
+    data = []
 
-    for innings in sc.get("innings", []):
-        for bowl in innings.get("bowling", []):
-            if target_player in bowl["player_name"].lower():
-                # Handle cases where 'overs' exists but 'balls' doesn't
-                balls_bowled = int(bowl.get("balls", 0))
-                if balls_bowled == 0 and "overs" in bowl:
-                    balls_bowled = int(float(bowl["overs"]) * 6)
+    for row in sc.get("bowling_scorecard", []):
+        if p in row.get("bowler id", "").lower():
+            overs = safe_float(row.get("overs"))
+            balls = int(overs * 6)
 
-                bowling_data.append({
-                    "match_id": sc["match_info"]["match_id"],
-                    "innings": innings.get("innings_number"),
-                    "wickets": int(bowl.get("wickets", 0)),
-                    "runs_conceded": int(bowl.get("runs", 0)),
-                    "balls": balls_bowled
-                })
+            data.append({
+                "match_id": sc["match_info"]["match_id"],
+                "wickets": safe_int(row.get("wickets")),
+                "runs_conceded": safe_int(row.get("conceded")),
+                "balls": balls
+            })
 
-    return bowling_data
-
+    return data
 
 # ---------------------------------------------------------------------------
 # PUBLIC METRICS
 # ---------------------------------------------------------------------------
 
 def total_runs_in_series(player, year=None, opponent=None, match_ids=None) -> int:
-    matches = _filter_matches(player, year, opponent, match_ids)
     total = 0
-    for sc in matches:
-        for inns in _player_innings(sc, player):
+    for sc in _filter_matches(player, year, opponent, match_ids):
+        for inns in _player_batting(sc, player):
             total += inns["runs"]
     return total
 
+
 def individual_runs_per_match(player, year=None, opponent=None, match_ids=None) -> List[Dict]:
-    matches = _filter_matches(player, year, opponent, match_ids)
-    result = []
-    
-    for sc in matches:
-        match_runs = 0
-        played = False
-        for inns in _player_innings(sc, player):
-            match_runs += inns["runs"]
-            played = True
-        
-        if played:
-            result.append({
+    results = []
+
+    for sc in _filter_matches(player, year, opponent, match_ids):
+        runs = sum(i["runs"] for i in _player_batting(sc, player))
+        if runs > 0:
+            results.append({
                 "match_id": sc["match_info"]["match_id"],
-                "runs": match_runs,
+                "runs": runs,
                 "player": player
             })
-    return result
 
-def total_wickets(player, year=None, opponent=None, match_ids=None) -> int:
-    matches = _filter_matches(player, year, opponent, match_ids)
-    total = 0
-    for sc in matches:
-        for bowl in _player_bowling(sc, player):
-            total += bowl["wickets"]
-    return total
+    return results
 
-def wickets_per_match(player, year=None, opponent=None, match_ids=None) -> List[Dict]:
-    matches = _filter_matches(player, year, opponent, match_ids)
-    result = []
-
-    for sc in matches:
-        match_wickets = 0
-        match_runs = 0
-        played = False
-        
-        for bowl in _player_bowling(sc, player):
-            match_wickets += bowl["wickets"]
-            match_runs += bowl["runs_conceded"]
-            played = True
-            
-        if played:
-            result.append({
-                "match_id": sc["match_info"]["match_id"],
-                "wickets": match_wickets,
-                "runs_conceded": match_runs,
-                "player": player
-            })
-    return result
 
 def batting_avg_sr(player, year=None, opponent=None, match_ids=None) -> Dict:
-    matches = _filter_matches(player, year, opponent, match_ids)
-    runs = 0
-    balls = 0
-    dismissals = 0
+    runs = balls = outs = 0
 
-    for sc in matches:
-        for inns in _player_innings(sc, player):
+    for sc in _filter_matches(player, year, opponent, match_ids):
+        for inns in _player_batting(sc, player):
             runs += inns["runs"]
             balls += inns["balls"]
-            if inns["dismissed"]:
-                dismissals += 1
+            outs += int(inns["dismissed"])
 
-    avg = (runs / dismissals) if dismissals > 0 else (runs if runs > 0 else 0.0)
-    sr = (runs / balls * 100) if balls > 0 else 0.0
+    avg = runs / outs if outs else runs
+    sr = (runs / balls) * 100 if balls else 0.0
 
     return {
         "runs": runs,
         "balls": balls,
         "average": round(avg, 2),
         "strike_rate": round(sr, 2),
-        "dismissals": dismissals
+        "dismissals": outs
     }
 
+
+def total_wickets(player, year=None, opponent=None, match_ids=None) -> int:
+    total = 0
+    for sc in _filter_matches(player, year, opponent, match_ids):
+        for b in _player_bowling(sc, player):
+            total += b["wickets"]
+    return total
+
+
 def bowling_economy_sr(player, year=None, opponent=None, match_ids=None) -> Dict:
-    matches = _filter_matches(player, year, opponent, match_ids)
-    wickets = 0
-    runs_conceded = 0
-    balls = 0
+    wickets = runs = balls = 0
 
-    for sc in matches:
-        for bowl in _player_bowling(sc, player):
-            wickets += bowl["wickets"]
-            runs_conceded += bowl["runs_conceded"]
-            balls += bowl["balls"]
+    for sc in _filter_matches(player, year, opponent, match_ids):
+        for b in _player_bowling(sc, player):
+            wickets += b["wickets"]
+            runs += b["runs_conceded"]
+            balls += b["balls"]
 
-    overs = balls / 6
-    economy = (runs_conceded / overs) if overs > 0 else 0.0
-    bowl_sr = (balls / wickets) if wickets > 0 else 0.0
-    average = (runs_conceded / wickets) if wickets > 0 else 0.0
+    overs = balls / 6 if balls else 0
+    economy = runs / overs if overs else 0
+    sr = balls / wickets if wickets else 0
+    avg = runs / wickets if wickets else 0
 
     return {
         "wickets": wickets,
-        "runs_conceded": runs_conceded,
+        "runs_conceded": runs,
         "balls": balls,
         "economy": round(economy, 2),
-        "strike_rate": round(bowl_sr, 2),
-        "average": round(average, 2)
+        "strike_rate": round(sr, 2),
+        "average": round(avg, 2)
     }
 
-def boundaries(player, year=None, opponent=None, match_ids=None) -> Dict:
-    matches = _filter_matches(player, year, opponent, match_ids)
-    fours = 0
-    sixes = 0
 
-    for sc in matches:
-        for inns in _player_innings(sc, player):
+def boundaries(player, year=None, opponent=None, match_ids=None) -> Dict:
+    fours = sixes = 0
+
+    for sc in _filter_matches(player, year, opponent, match_ids):
+        for inns in _player_batting(sc, player):
             fours += inns["fours"]
             sixes += inns["sixes"]
 
@@ -310,3 +243,22 @@ def boundaries(player, year=None, opponent=None, match_ids=None) -> Dict:
         "sixes": sixes,
         "total_boundary_runs": (fours * 4) + (sixes * 6)
     }
+'''if __name__ == "__main__":
+    print("Total runs:", total_runs_in_series("Virat Kohli"))
+    print("Batting AVG & SR:", batting_avg_sr("Virat Kohli"))
+    print("\n--- Year Filter Test ---")
+    print("2019 runs:", total_runs_in_series("Virat Kohli", year=2019))
+    print("2020 runs:", total_runs_in_series("Virat Kohli", year=2020))
+    print("\n--- Opponent Filter Test ---")
+    print("vs Australia:", total_runs_in_series("Virat Kohli", opponent="australia"))
+    print("vs England:", total_runs_in_series("Virat Kohli", opponent="england"))
+    print("\n--- Runs Per Match ---")
+    for r in individual_runs_per_match("Virat Kohli"):
+        print(r)
+    print("\n--- Bowling Stats ---")
+    print("Total wickets:", total_wickets("Jasprit Bumrah"))
+    print("Bowling SR & Econ:", bowling_economy_sr("Jasprit Bumrah"))
+    print("\n--- Boundary Stats ---")
+    print(boundaries("Virat Kohli"))
+    print("\n--- Match ID Filter ---")
+    print(total_runs_in_series("Virat Kohli", match_ids=["1187685"]))'''
